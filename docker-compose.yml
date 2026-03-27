@@ -111,6 +111,25 @@ services:
       retries: 5
       start_period: 5s
     restart: always
+  
+  source_postgres:
+    image: postgres:13
+    container_name: source_db_container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: greenery
+    ports:
+      - "5433:5432"
+    volumes:
+      - source-db-volume:/var/lib/postgresql/data
+      - ./dataset/greenery:/tmp/greenery
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
 
   # redis:
   #   # Redis is limited to 7.2-bookworm due to licencing change
@@ -342,22 +361,22 @@ services:
   #     airflow-init:
   #       condition: service_completed_successfully
 
-  # spark-master:
-  #   image: spark-image
-  #   entrypoint: ['./entrypoint.sh', 'master']
-  #   build:
-  #     context: docker
-  #     dockerfile: Dockerfile-spark
-  #   ports:
-  #     - "4040:4040"
-  #     - "9090:8080"
-  #     - "7077:7077"
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./pyspark:/opt/spark/pyspark
-  #     - ${AIRFLOW_PROJ_DIR:-.}/spark-events:/opt/spark/spark-events
-  #   env_file:
-  #     - .env.spark
+  spark-master:
+    image: spark-image
+    entrypoint: ['./entrypoint.sh', 'master']
+    build:
+      context: docker
+      dockerfile: Dockerfile-spark
+    ports:
+      - "4040:4040"
+      - "9090:8080"
+      - "7077:7077"
+      - "3000:3000"
+    volumes:
+      - ./pyspark:/opt/spark/pyspark
+      - ${AIRFLOW_PROJ_DIR:-.}/spark-events:/opt/spark/spark-events
+    env_file:
+      - .env.spark
 
   spark-history:
     image: spark-image
@@ -382,5 +401,6 @@ services:
 
 volumes:
   postgres-db-volume:
+  source-db-volume
   spark-logs:
 
