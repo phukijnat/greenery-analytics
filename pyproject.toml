@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "greenery-analytics"
+version = "0.1.0"
+description = ""
+authors = ["Phukijnat Mekhasawatdiwongsri <phukijnat.mek@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.32.3"
+pysftp = "^0.2.9"
+psycopg2-binary = "^2.9.9"
+google-cloud-bigquery = "^3.34.0"
+google-cloud-storage = "^2.18.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
