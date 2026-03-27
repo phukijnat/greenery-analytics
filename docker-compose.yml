@@ -401,6 +401,6 @@ services:
 
 volumes:
   postgres-db-volume:
-  source-db-volume
+  source-db-volume:
   spark-logs:
 
