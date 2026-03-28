@@ -1,13 +1,13 @@
-CREATE TABLE IF NOT EXISTS address (
-    address_id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS addresses (
+    address_id VARCHAR(255) PRIMARY KEY,
     address VARCHAR(255),
     zipcode VARCHAR(10),
     state VARCHAR(100),
     country VARCHAR(100)
 );
 
-CREATE TABLE IF NOT EXISTS event (
-    event_id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS events (
+    event_id VARCHAR(255) PRIMARY KEY,
     session_id VARCHAR(255),
     user_id VARCHAR(255),
     page_url VARCHAR(255),

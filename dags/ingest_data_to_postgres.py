@@ -1,98 +1,34 @@
 from airflow import DAG
-from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from datetime import datetime
 
+
+TABLES = ['addresses', 'users', 'promos', 'products', 'orders', 'order_items', 'events']
+
 with DAG(
-    dag_id='ingest_greenery_csv_to_postgres',
+    dag_id='ingest_greenery_csv_to_postgres_v2',
     start_date=datetime(2026, 3, 1),
-    schedule_interval='@once',
+    schedule='@once',
     catchup=False,
     tags=['greenery', 'ingest']
 ) as dag:
 
-    greenery_addresses = PostgresOperator(
-        task_id='ingest_addresses_csv_to_postgres',
-        postgres_conn_id='postgres_source', 
-        sql="""
-            TRUNCATE TABLE addresses RESTART IDENTITY;
-                COPY addresses
-                FROM '/docker-entrypoint-initdb.d/addresses.csv'
+    prev_task = None
+
+    for table_name in TABLES:
+        current_task = SQLExecuteQueryOperator(
+            task_id=f'ingest_{table_name}_csv_to_postgres',
+            conn_id='postgres_source', 
+            sql=f"""
+                TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE;
+                COPY {table_name}
+                FROM '/docker-entrypoint-initdb.d/{table_name}.csv'
                 DELIMITER ','
                 CSV HEADER;
-        """
-    )
-
-    greenery_events = PostgresOperator(
-        task_id='ingest_events_csv_to_postgres',
-        postgres_conn_id='postgres_source', 
-        sql="""
-            TRUNCATE TABLE events RESTART IDENTITY;
-                COPY events
-                FROM '/docker-entrypoint-initdb.d/events.csv'
-                DELIMITER ','
-                CSV HEADER;
-        """
-    )
-
-
-    greenery_order_items = PostgresOperator(
-        task_id='ingest_order_items_csv_to_postgres',
-        postgres_conn_id='postgres_source', 
-        sql="""
-            TRUNCATE TABLE order_items RESTART IDENTITY;
-                COPY order_items
-                FROM '/docker-entrypoint-initdb.d/order_items.csv'
-                DELIMITER ','
-                CSV HEADER;
-        """
-    )
-
-    greenery_orders = PostgresOperator(
-        task_id='ingest_orders_csv_to_postgres',
-        postgres_conn_id='postgres_source', 
-        sql="""
-            TRUNCATE TABLE orders RESTART IDENTITY;
-                COPY orders
-                FROM '/docker-entrypoint-initdb.d/orders.csv'
-                DELIMITER ',')
-            CSV HEADER;
-        """
-    )
-
-    greenery_products = PostgresOperator(
-        task_id='ingest_products_csv_to_postgres',
-        postgres_conn_id='postgres_source', 
-        sql="""
-            TRUNCATE TABLE products RESTART IDENTITY;
-                COPY products
-                FROM '/docker-entrypoint-initdb.d/products.csv'
-                DELIMITER ','
-                CSV HEADER;
-        """
-    )
-
-    greenery_promos = PostgresOperator(
-        task_id='ingest_promos_csv_to_postgres',
-        postgres_conn_id='postgres_source', 
-        sql="""
-            TRUNCATE TABLE promos RESTART IDENTITY;
-                COPY promos
-                FROM '/docker-entrypoint-initdb.d/promos.csv'
-                DELIMITER ','
-            CSV HEADER;
-        """
-    )
-
-    greenery_user = PostgresOperator(
-        task_id='ingest_users_csv_to_postgres',
-        postgres_conn_id='postgres_source', 
-        sql="""
-            TRUNCATE TABLE users RESTART IDENTITY;
-                COPY users
-                FROM '/docker-entrypoint-initdb.d/users.csv'
-                DELIMITER ','
-                CSV HEADER;
-        """
-    )
-
-    
+            """
+        )
+        
+        # เชื่อมลำดับ Task ต่อกันไปเรื่อยๆ
+        if prev_task:
+            prev_task >> current_task
+        prev_task = current_task

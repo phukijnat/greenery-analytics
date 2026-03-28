@@ -54,7 +54,6 @@ x-airflow-common:
     context: docker
     dockerfile: Dockerfile-airflow
   networks:
-    - lab_shared_network
     - default
   environment:
     &airflow-common-env

@@ -17,6 +17,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
 RUN export JAVA_HOME
 
 RUN pip install --no-cache-dir apache-airflow-providers-apache-spark==4.9.0 \
+                               apache-airflow-providers-postgres \
                                pyspark==3.3.2 \
                                great_expectations>=1.0.0 \
                                airflow-provider-great-expectations==0.3.0 \
