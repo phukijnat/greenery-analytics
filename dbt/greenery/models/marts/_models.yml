@@ -1,0 +1,13 @@
+version: 2
+
+models:
+
+  - name: number_of_orders
+    description: |
+      This model calculates the total number of unique orders.
+  - name: number_of_users
+    description: |
+      This model calculates the total number of unique users.
+  - name: state_with_highest_number_of_orders
+    description: |
+      This model identifies the state with the highest number of orders.

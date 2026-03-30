@@ -1,0 +1,143 @@
+version: 2
+
+models:
+
+  - name: stg_greenery_addresses
+    description: "Cleaned address information from the Greenery system."
+    columns:
+      - name: address_guid
+        description: "Primary key for the address."
+        tests:
+          - unique
+          - not_null
+      - name: zipcode
+        description: "Standardized zipcode as string."
+  
+  - name: stg_greenery_events
+    description: "Website event logs tracking user activities like page views, add-to-carts, and checkouts."
+    columns:
+      - name: event_guid
+        description: "Primary key for the event."
+        tests:
+          - unique
+          - not_null
+      - name: session_guid
+        description: "Unique identifier for the user session."
+        tests:
+          - not_null
+      - name: user_guid
+        description: "Foreign key referencing the user who performed the event."
+        tests:
+          - not_null
+      - name: event_type
+        description: "The type of action performed (e.g., page_view, add_to_cart, checkout, package_shipped)."
+        tests:
+          - accepted_values:
+              values: ['page_view', 'add_to_cart', 'checkout', 'package_shipped']
+      - name: order_guid
+        description: "Optional foreign key to orders table, only present for checkout or shipping events."
+      - name: product_guid
+        description: "Optional foreign key to products table, only present for product-related events."
+  
+  - name: stg_greenery_order_items
+    description: "Staging model for order items data from. the Greenery data."
+    columns:
+      - name: order_guid
+        description: "Unique identifier for the order."
+        tests:
+          - not_null
+      - name: product_guid
+        description: "Unique identifier for the product."
+        tests:
+          - not_null
+  
+  - name: stg_greenery_orders
+    description: "Staging model for orders data from the Greenery data."
+    columns:
+      - name: order_guid
+        description: "Primary key for the order."
+        tests:
+          - unique
+          - not_null
+      - name: user_guid
+        description: "Foreign key to the users table."
+        tests:
+          - not_null
+      - name: address_guid
+        description: "Foreign key to the addresses table. Indicates where the order was shipped."
+        tests:
+          - not_null
+      - name: order_total_usd
+        description: "Total amount of the order in USD, including shipping and taxes."
+        tests:
+          - not_null
+      - name: order_status
+        description: "Current status of the order (e.g., pending, shipped, delivered, returned)."
+        tests:
+          - accepted_values:
+              values: ['shipped', 'delivered', 'preparing']
+
+  - name: stg_greenery_products
+    description: "Staging model for products data from the Greenery data."
+    columns:
+      - name: product_guid
+        description: "Primary key for the product."
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "Name of the product."
+        tests:
+          - not_null
+      - name: price
+        description: "Price of the product"
+        tests:
+          - not_null
+      - name: inventory
+        description: "Number of items in stock for the product."
+        tests:
+          - not_null
+  
+  - name: stg_greenery_promos
+    description: "Staging model for promotions data from the Greenery data."
+    columns:
+      - name: promo_guid
+        description: "Primary key for the promotion."
+        tests:
+          - unique
+          - not_null
+      - name: discount
+        description: "Discount amount or percentage for the promotion."
+        tests:
+          - not_null
+      - name: promo_status
+        description: "Current status of the promotion."
+        tests:
+          - accepted_values:
+              values: ['active', 'inactive']
+
+  - name: stg_greenery_users
+    description: "Staging model for users data from the Greenery data."
+    columns:
+      - name: user_guid
+        description: "Primary key for the user."
+        tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: "First name of the user."
+        tests:
+          - not_null
+      - name: last_name
+        description: "Last name of the user."
+        tests:
+          - not_null
+      - name: email
+        description: "Email address of the user."
+        tests:
+          - not_null
+      - name: address_guid
+        description: "Foreign key to the addresses table."
+        tests:
+          - not_null
+      

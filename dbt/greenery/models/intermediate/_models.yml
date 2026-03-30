@@ -1,0 +1,7 @@
+version: 2
+
+models:
+
+  - name : int_orders_addresses_joined
+    description:
+      This model joins the orders and addresses tables to provide a comprehensive view of order details along with customer address information.

@@ -1,6 +1,6 @@
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.types import IntegerType, StructField, StructType, StringType
+from pyspark.sql.types import IntegerType, StructField, StructType, StringType, DoubleType
 
 
 BUSINESS_DOMAIN = "greenery"
@@ -19,12 +19,13 @@ spark = SparkSession.builder.appName("greenery") \
 
 struct_schema = StructType([
     StructField("promo_id", StringType()),
-    StructField("discount", IntegerType()),
+    StructField("discount", DoubleType()),
     StructField("status", StringType()),
 ])
 
 GCS_FILE_PATH = f"gs://{BUCKET_NAME}/raw/{BUSINESS_DOMAIN}/{DATA}/{DATA}.csv"
 df = spark.read.option("header", True).schema(struct_schema).csv(GCS_FILE_PATH)
+df = df.withColumn("discount", df["discount"].cast(IntegerType()))
 df.show()
 
 df.createOrReplaceTempView("PROMOS_TABLE")

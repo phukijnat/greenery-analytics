@@ -1,4 +1,4 @@
-FROM --platform=linux/${TARGETARCH} apache/airflow:3.0.1-python3.9
+FROM --platform=linux/${TARGETARCH} apache/airflow:3.0.1-python3.10
 
 USER root
 
@@ -22,12 +22,12 @@ RUN pip install --no-cache-dir apache-airflow-providers-apache-spark==4.9.0 \
                                great_expectations>=1.0.0 \
                                airflow-provider-great-expectations==0.3.0 \
                                astronomer-cosmos==1.10.1 \
-                               dbt-core==1.9.4 \
-                               dbt-bigquery==1.9.1 \
+                               dbt-core==1.11.7 \
+                               dbt-bigquery==1.11.1 \
                                google-genai==1.25.0 \
                                pandas-gbq==0.29.2
 
-COPY ./conf/spark-defaults.conf /home/airflow/.local/lib/python3.9/site-packages/pyspark/conf/spark-defaults.conf
-COPY ./conf/metrics.properties /home/airflow/.local/lib/python3.9/site-packages/pyspark/conf/metrics.properties
-COPY ./jars/gcs-connector-hadoop3-latest.jar /home/airflow/.local/lib/python3.9/site-packages/pyspark/jars/gcs-connector-hadoop3-latest.jar
-ENV SPARK_CONF_DIR=/home/airflow/.local/lib/python3.9/site-packages/pyspark/conf
+COPY ./conf/spark-defaults.conf /home/airflow/.local/lib/python3.10/site-packages/pyspark/conf/spark-defaults.conf
+COPY ./conf/metrics.properties /home/airflow/.local/lib/python3.10/site-packages/pyspark/conf/metrics.properties
+COPY ./jars/gcs-connector-hadoop3-latest.jar /home/airflow/.local/lib/python3.10/site-packages/pyspark/jars/gcs-connector-hadoop3-latest.jar
+ENV SPARK_CONF_DIR=/home/airflow/.local/lib/python3.10/site-packages/pyspark/conf
