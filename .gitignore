@@ -204,3 +204,6 @@ deb-*.json
 
 # DBT Packages
 package-lock.yml
+
+# Extracted greenery data
+/extracted_data

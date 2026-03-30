@@ -28,7 +28,6 @@ with DAG(
             """
         )
         
-        # เชื่อมลำดับ Task ต่อกันไปเรื่อยๆ
         if prev_task:
             prev_task >> current_task
         prev_task = current_task
