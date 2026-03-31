@@ -33,8 +33,7 @@ models:
   greenery:
     staging:
       +schema: staging
-      greenery:
-        +materialized: view
+      +materialized: view
     intermediate:
       +schema: intermediate
       +materialized: view
