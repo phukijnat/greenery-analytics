@@ -1,6 +1,6 @@
 # Greenery Analytics
 
-โปรเจคนี้เป็น end-to-end batch data pipeline บน dataset ของร้าน e-commerce สมมติ เป้าหมายคือสร้าง pipeline ที่สะท้อนการทำงานจริงในองค์กร ตั้งแต่การดึงข้อมูลแบบ incremental, ประมวลผลด้วย PySpark บน Spark cluster, จัดเก็บใน GCS และ BigQuery ไปจนถึงการสร้าง analytical models ด้วย dbt ที่มี layering ชัดเจน ไม่ใช่แค่รันสคริปต์เดียวจบ
+Greenery Analytics เป็น end-to-end batch data pipeline ที่สร้างขึ้นบน dataset ของ e-commerce (Greenery) โดยครอบคลุม lifecycle ของงาน Data Engineering ตั้งแต่ต้นจนจบ — ตั้งแต่การดึงข้อมูลดิบจาก PostgreSQL, แปลงข้อมูลด้วย PySpark, จัดเก็บใน GCS และ BigQuery ไปจนถึง dbt models ที่แบ่ง layer ชัดเจนทั้ง staging, intermediate และ mart — เพื่อรองรับการวิเคราะห์พฤติกรรมลูกค้าและ e-commerce funnel
 
 ---
 
