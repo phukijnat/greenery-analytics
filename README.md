@@ -1,66 +1,150 @@
 # Greenery Analytics
 
-End-to-end batch data pipeline for a fictional e-commerce platform. ดึงข้อมูลจาก PostgreSQL, แปลงด้วย PySpark, เก็บไว้ใน GCS แล้ว load เข้า BigQuery และสร้าง analytical models ด้วย dbt
+โปรเจคนี้เป็น end-to-end batch data pipeline บน dataset ของร้าน e-commerce สมมติ เป้าหมายคือสร้าง pipeline ที่สะท้อนการทำงานจริงในองค์กร ตั้งแต่การดึงข้อมูลแบบ incremental, ประมวลผลด้วย PySpark บน Spark cluster, จัดเก็บใน GCS และ BigQuery ไปจนถึงการสร้าง analytical models ด้วย dbt ที่มี layering ชัดเจน ไม่ใช่แค่รันสคริปต์เดียวจบ
 
-## Architecture
+---
 
-```
-PostgreSQL → (Airflow) → PySpark → GCS (Parquet) → BigQuery → dbt marts
-```
-
-แต่ละ entity (orders, users, products, events, promos, addresses) มี Airflow DAG เป็นของตัวเอง รัน daily incremental load ผ่าน `SparkSubmitOperator` ไปยัง Spark cluster (master/worker) แล้ว upload ผลลัพธ์เป็น Parquet ไปที่ GCS ก่อน load เข้า BigQuery
-
-dbt รับช่วงต่อจาก BigQuery โดยแบ่ง model เป็น 3 ชั้น:
+## สถาปัตยกรรม
 
 ```
-staging/       ← rename columns, cast types, remove duplicates
-intermediate/  ← join across entities (orders × products, orders × addresses)
-marts/         ← final models ที่ตอบ business questions
+┌─────────────┐     CSV      ┌─────┐   Parquet   ┌─────────────────┐
+│  PostgreSQL │ ──────────▶ │ GCS │ ──────────▶ │    BigQuery     │
+│  (source)   │             └─────┘             └────────┬────────┘
+└──────┬──────┘               ▲                          │
+       │                      │                          ▼
+       │              ┌───────────────┐         ┌────────────────┐
+       │              │ Spark cluster │         │   dbt models   │
+       │              │ (transform)   │         │ staging / int  │
+       └─────────────▶│ PySpark jobs  │         │   / marts      │
+      extract         └───────────────┘         └────────────────┘
+
+ควบคุมทั้งหมดด้วย Apache Airflow
 ```
 
-**Mart models ตอบคำถามเหล่านี้:**
-- How many users / orders do we have?
-- Which state has the highest number of orders?
-- What is the user repeat rate?
-- What is the add-to-cart rate?
-- What is the conversion rate by product?
+มี Airflow DAG แยกกัน 7 ตัว — หนึ่งตัวต่อหนึ่ง entity (`orders`, `users`, `products`, `events`, `promos`, `addresses`, `order_items`) แต่ละตัวรัน daily และทำงานตาม pattern เดียวกัน:
 
-## Stack
+1. **Extract** — ดึงข้อมูลแบบจาก PostgreSQL แล้ว upload ขึ้น GCS เป็น CSV (prefix: `raw/`)
+2. **Transform** — ส่ง PySpark job ไปรันบน Spark cluster อ่าน CSV มา enforce schema + cleanup แล้ว write กลับเป็น Parquet (prefix: `cleaned/`)
+3. **Load** — load Parquet จาก GCS เข้า BigQuery แบบ time-partitioned table
+4. **Model** — `greenery_dbt_dag` (ใช้ Astronomer Cosmos) รับช่วงต่อจาก BigQuery แล้วรัน dbt models ทั้งหมด
 
-- **Orchestration** — Apache Airflow 3.0.1
+> **Screenshot:** *(Airflow DAG grid view แสดง pipeline ทั้งหมด)*
+
+![Airflow DAG Grid 1](assets/airflow-dags-grid-1.png)
+![Airflow DAG Grid 2](assets/airflow-dags-grid-2.png)
+
+> **Screenshot:** *(DAG graph view task flow: branch → spark → BQ)*
+
+![Airflow Orders Graph](assets/airflow-graph-order.png)
+![Airflow dbt Graph](assets/airflow-graph-dbt.png)
+
+---
+
+## dbt Layers
+
+```
+staging/        → rename columns, cast types, deduplicate
+intermediate/   → join ข้ามตาราง (orders × products, orders × addresses)
+marts/          → final models สำหรับตอบ business questions
+```
+
+mart layer สร้างมาเพื่อตอบคำถามเหล่านี้:
+
+| Mart Model | Business Question |
+|---|---|
+| `number_of_users` | มี user ทั้งหมดกี่คน? |
+| `number_of_orders` | มี order ทั้งหมดกี่ order? |
+| `state_with_highest_number_of_orders` | รัฐไหนมี order เยอะที่สุด? |
+| `user_repeat_rate` | มีกี่ % ของ user ที่กลับมาซื้อซ้ำ? |
+| `add_to_cart_rate` | อัตราการ add-to-cart จาก page view เป็นเท่าไร? |
+| `conversion_rate_by_product` | conversion rate ของแต่ละสินค้าเป็นเท่าไร? |
+| `fct_orders` | Fact table แบบ denormalized (รวม user + product + address) |
+
+> **Screenshot:** *(dbt lineage graph DAG ทั้งหมดตั้งแต่ source → staging → intermediate → marts)*
+
+![dbt Lineage Graph](assets/dbt-lineage-graph.png)
+
+> **Screenshot:** *(BigQuery console แสดง dataset กับ tables ทั้งหมด และ query result ของ mart models)*
+
+![BigQuery Console 1](assets/bigquery-console-1.png)
+![BigQuery Console 2](assets/bigquery-console-2.png)
+![Conversion Rate by Product](assets/bigquery-mart-conversion.png)
+![Add to Cart Rate](assets/bigquery-mart-add_to_cart.png)
+![State with Highest Orders](assets/bigquery-mart-state_highest_order.png)
+![User Repeat Rate](assets/bigquery-mart-repeat.png)
+![Fact Orders](assets/bigquery-mart-fct.png)
+
+---
+
+## Tech Stack
+
+- **Orchestration** — Apache Airflow
 - **Processing** — Apache Spark / PySpark
-- **Transformation** — dbt Core 1.11.7 + BigQuery adapter
-- **Storage** — Google Cloud Storage (Parquet), Google BigQuery
-- **Source DB** — PostgreSQL 13
+- **Transformation** — dbt Core + BigQuery adapter
+- **Storage** — Google Cloud Storage, Google BigQuery
+- **Source DB** — PostgreSQL
 - **Infra** — Docker Compose (Airflow + Spark cluster + PostgreSQL)
-- **Language** — Python 3.12, managed with Poetry
 
-## Run Locally
+---
 
-**Prerequisites:** Docker, GCP Service Account JSON (BigQuery + GCS access)
+## โครงสร้างโปรเจค
+
+```
+greenery-analytics/
+├── dags/               # Airflow DAGs (7 entity pipelines + dbt DAG)
+├── dbt/greenery/
+│   └── models/
+│       ├── staging/      # 7 staging models
+│       ├── intermediate/ # 3 join models
+│       └── marts/        # 7 business metric models
+├── pyspark/            # PySpark transformation jobs (แยกตาม entity)
+├── docker/             # Dockerfiles สำหรับ Airflow และ Spark
+├── dataset/greenery/   # Seed SQL scripts สำหรับ source PostgreSQL
+├── docker-compose.yml
+└── Makefile
+```
+
+---
+
+## รันบนเครื่องตัวเอง
+
+**ต้องมี:** Docker และ GCP Service Account ที่มีสิทธิ์ BigQuery + GCS
 
 ```bash
-# install dependencies
-poetry install
-
-# set environment variables
-cp .env.example .env  # แก้ไข GCP_PROJECT_ID, bucket_name, service account path
-
-# start all services (Airflow, Spark, PostgreSQL)
+# start ทุก service (Airflow, Spark cluster, PostgreSQL)
 make build
 make up
 ```
 
-Airflow UI จะขึ้นที่ `http://localhost:8080`
+Airflow UI: `http://localhost:8080`  
 
-Trigger DAGs ตามลำดับ:
-1. `ingest_data_to_postgres` — load seed data เข้า source DB
-2. `greenery_*_data_pipeline` — extract → spark → GCS → BigQuery
-3. `greenery_dbt_dag` — run dbt models
+**ตั้งค่า Airflow Connections** (Admin → Connections):
+
+| Conn ID | Type | รายละเอียด |
+|---|---|---|
+| `postgres_source` | Postgres | Host: `source_postgres`, Port: `5432`, Database: `greenery`, Login: `postgres`, Password: `postgres` |
+| `my_spark` | Spark | Host: `spark://spark-master`, Port: `7077` |
+| `load_data_to_gcs` | Google Cloud Platform | Project ID: `<your_project_id>`, Keyfile JSON: `<your_service_account_json>` |
+| `load_data_from_gcs_to_bigquery` | Google Cloud Platform | Project ID: `<your_project_id>`, Keyfile JSON: `<your_service_account_json>` |
+
+**Trigger DAGs ตามลำดับ:**
+
+1. `ingest_data_to_postgres` — seed ข้อมูลเข้า source database
+2. `greenery_*_data_pipeline` — รัน pipeline extract → spark → BQ ของแต่ละ entity
+3. `greenery_dbt_dag` — รัน dbt models ทั้งหมดบน BigQuery
 
 ```bash
-# หรือ run dbt แยก
+# รัน dbt แยก (ต้องมี BigQuery credentials)
 cd dbt/greenery
 dbt run
 dbt test
 ```
+
+```bash
+# shortcut ต่าง ๆ ของ Spark (ผ่าน Makefile)
+make bash       # เข้า shell ใน spark-master
+make pyspark    # เปิด PySpark REPL
+make notebook   # Jupyter notebook ที่ port 3000
+```
+
+
