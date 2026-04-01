@@ -6,20 +6,7 @@ Greenery Analytics เป็น end-to-end batch data pipeline ที่สร�
 
 ## Architecture
 
-```
-┌─────────────┐     CSV     ┌─────┐   Parquet   ┌─────────────────┐
-│  PostgreSQL │ ──────────▶ │ GCS │ ──────────▶ │    BigQuery     │
-│  (source)   │             └─────┘             └────────┬────────┘
-└──────┬──────┘               ▲                          │
-       │                      │                          ▼
-       │              ┌───────────────┐         ┌────────────────┐
-       │              │ Spark cluster │         │   dbt models   │
-       │              │ (transform)   │         │ staging / int  │
-       └─────────────▶│ PySpark jobs  │         │   / marts      │
-      extract         └───────────────┘         └────────────────┘
-
-ควบคุมทั้งหมดด้วย Apache Airflow
-```
+![Architecture_diagram](assets/architecture_diagram.svg)
 
 มี Airflow DAG แยกกัน 7 ตัว — หนึ่งตัวต่อหนึ่ง entity (`orders`, `users`, `products`, `events`, `promos`, `addresses`, `order_items`) แต่ละตัวรัน daily และทำงานตาม pattern เดียวกัน:
 
