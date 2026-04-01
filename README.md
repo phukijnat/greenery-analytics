@@ -4,7 +4,7 @@ Greenery Analytics เป็น end-to-end batch data pipeline ที่สร�
 
 ---
 
-## สถาปัตยกรรม
+## Architecture
 
 ```
 ┌─────────────┐     CSV     ┌─────┐   Parquet   ┌─────────────────┐
@@ -87,7 +87,7 @@ mart layer สร้างมาเพื่อตอบคำถามเหล
 
 ---
 
-## โครงสร้างโปรเจค
+## Project structure
 
 ```
 greenery-analytics/
@@ -106,7 +106,7 @@ greenery-analytics/
 
 ---
 
-## รันบนเครื่องตัวเอง
+## Local
 
 **ต้องมี:** Docker และ GCP Service Account ที่มีสิทธิ์ BigQuery + GCS
 
@@ -127,7 +127,7 @@ Airflow UI: `http://localhost:8080`
 | `load_data_to_gcs` | Google Cloud Platform | Project ID: `<your_project_id>`, Keyfile JSON: `<your_service_account_json>` |
 | `load_data_from_gcs_to_bigquery` | Google Cloud Platform | Project ID: `<your_project_id>`, Keyfile JSON: `<your_service_account_json>` |
 
-**Trigger DAGs ตามลำดับ:**
+**Trigger DAGs :**
 
 1. `ingest_data_to_postgres` — seed ข้อมูลเข้า source database
 2. `greenery_*_data_pipeline` — รัน pipeline extract → spark → BQ ของแต่ละ entity
